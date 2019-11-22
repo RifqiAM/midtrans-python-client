@@ -53,18 +53,21 @@ def simple_core_api_checkout():
 def charge_core_api_ajax():
     request_json = request.get_json()
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    charge_api_response = core.charge({
-        "payment_type": "credit_card",
-        "transaction_details": {
-            "gross_amount": 200000,
-            "order_id": "order-id-python-"+timestamp,
-        },
-        "credit_card":{
-            "token_id": request_json['token_id'],
-            "authentication": request_json['authenticate_3ds'],
-        }
-    })
-    return jsonify(charge_api_response)
+    try:
+        charge_api_response = core.charge({
+            "payment_type": "credit_card",
+            "transaction_details": {
+                "gross_amount": 200000,
+                "order_id": "order-id-python-"+timestamp,
+            },
+            "credit_card":{
+                "token_id": request_json['token_id'],
+                "authentication": request_json['authenticate_3ds'],
+            }
+        })
+    except Exception as e:
+        charge_api_response = e.api_response_dict
+    return charge_api_response
 
 # [4] Handle Core API check transaction status
 @app.route('/check_transaction_status', methods=['POST'])
@@ -81,11 +84,20 @@ def check_transaction_status():
         elif fraud_status == 'accept':
             # TODO set transaction status on your databaase to 'success'
             None
+    elif transaction_status == 'settlement':
+        # TODO set transaction status on your databaase to 'success'
+        # Note: Non-card transaction will become 'settlement' on payment success
+        # Card transaction will also become 'settlement' D+1, which you can ignore
+        # because most of the time 'capture' is enough to be considered as success
+        None
     elif transaction_status == 'cancel' or transaction_status == 'deny' or transaction_status == 'expire':
         # TODO set transaction status on your databaase to 'failure'
         None
     elif transaction_status == 'pending':
         # TODO set transaction status on your databaase to 'pending' / waiting payment
+        None
+    elif transaction_status == 'refund':
+        # TODO set transaction status on your databaase to 'refund'
         None
     return jsonify(transaction_status)
 
@@ -115,11 +127,20 @@ def notification_handler():
         elif fraud_status == 'accept':
             # TODO set transaction status on your databaase to 'success'
             None
+    elif transaction_status == 'settlement':
+        # TODO set transaction status on your databaase to 'success'
+        # Note: Non card transaction will become 'settlement' on payment success
+        # Credit card will also become 'settlement' D+1, which you can ignore
+        # because most of the time 'capture' is enough to be considered as success
+        None
     elif transaction_status == 'cancel' or transaction_status == 'deny' or transaction_status == 'expire':
         # TODO set transaction status on your databaase to 'failure'
         None
     elif transaction_status == 'pending':
         # TODO set transaction status on your databaase to 'pending' / waiting payment
+        None
+    elif transaction_status == 'refund':
+        # TODO set transaction status on your databaase to 'refund'
         None
     app.logger.info(summary)
     return jsonify(summary)
